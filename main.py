@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import MaxNLocator
-#import os
+import os
 import pandas as pd
 import PySimpleGUI as sg
 
@@ -34,6 +34,8 @@ def plot_data():    # Plot a 2D line plot
 
 # def multi_plot():
 
+
+#def plot_spectrum():
 
 
 def delete_figure_agg(figure_agg):  # Delete fig to clear the canvas
@@ -95,6 +97,10 @@ multi_plot_tab = [
      sg.Button('Plot', key='-MPLOT-')]
 ]
 
+spectrum_plot_tab = [
+    [sg.T('Spectrum', size=(5, 1))]
+]
+
 file_frame = [
     [sg.Input(enable_events=True, key='-PATH-'),
      sg.FileBrowse()],
@@ -112,7 +118,7 @@ file_frame = [
 main_tab_layout = [
     [sg.Frame('', layout=file_frame),
      sg.Frame('Preview', layout=[[sg.Multiline(size=(50, 4), disabled=True, key='-OUT-')]]),
-     sg.TabGroup([[sg.Tab('Plot 2D', plot2D_tab, key='-PLOT2D-'), sg.Tab('Multi Plot', multi_plot_tab, key='-MULTIPLOT-')]])],
+     sg.TabGroup([[sg.Tab('Plot 2D', plot2D_tab, key='-PLOT2D-'), sg.Tab('Multi Plot', multi_plot_tab, key='-MULTIPLOT-'), sg.Tab('Spectrum Plot', spectrum_plot_tab, key='-SPECTRUM-')]])],
 
     [sg.Frame('Data', layout=[], visible=False, key='-DATAFRAME-')]
 ]
