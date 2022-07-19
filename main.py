@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import MaxNLocator
-#import os
+import os
 import pandas as pd
 import PySimpleGUI as sg
 
@@ -56,6 +56,8 @@ def tab(name):  # Create and return the new tab layout
 def new_y(y):
     key = ''.join(['-YMULTI', str(y), '-'])
     txt = ''.join(['Y Axis ', str(y)])
+    yList.append(key)
+    print(yList)
     return [[sg.T(txt), sg.Combo([], size=(9, 1), key=key, enable_events=True)]]
 
 
@@ -70,8 +72,8 @@ fSize = ((wW-20)*px, (wH-100)*px)  # Fig size
 dSize = (wW/3, wH)   # Data table size
 headings = []
 plotted = False
+yList = ['-YMULTI0-']
 ys = 1
-
 
 # ------ LAYOUT ------
 plot2D_tab = [
@@ -177,11 +179,8 @@ while True:
             window['-X-'](values=headings)  # Update combo boxes with heading values
             window['-Y-'](values=headings)
             window['-XMULTI-'](values=headings)
-            i = 0
-            while i < ys:
-                key = ''.join(['-YMULTI', str(i), '-'])
-                window[key](values=headings)
-                i += 1
+            for i in yList:
+                window[i](values=headings)
 
         except ValueError:
             window['-OUT-'].update('ValueError')
