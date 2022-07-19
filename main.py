@@ -32,8 +32,14 @@ def plot_data():    # Plot a 2D line plot
     return fig, ax  # Return graph handlers
 
 
-# def multi_plot():
-
+def multi_plot():
+    ax = data.plot(value['-XMULTI-'], (value[i] for i in yList))
+    ax.set_xlabel(value['-XMULTI-'])
+    ax.xaxis.set_major_locator(MaxNLocator(7))
+    ax.yaxis.set_major_locator(MaxNLocator(7))
+    ax.grid()
+    fig = ax.get_figure()
+    return fig, ax  # Return graph handlers
 
 
 def delete_figure_agg(figure_agg):  # Delete fig to clear the canvas
@@ -161,11 +167,11 @@ while True:
             f = ''.join(['Data : ', f[-1]])
             window['-DATAFRAME-'](f)  # Change frame name
             
-            if '-DATA-' in window.AllKeysDict:
-                window['-DATA-'].update(visible=False)
-                window['-DELETE-'].update(visible=False)
-                window['-DATA-'].Widget.master.pack_forget()
-                window['-DELETE-'].Widget.master.pack_forget()
+            # if '-DATA-' in window.AllKeysDict:
+            #     window['-DATA-'].update(visible=False)
+            #     window['-DELETE-'].update(visible=False)
+            #     window['-DATA-'].Widget.master.pack_forget()
+            #     window['-DELETE-'].Widget.master.pack_forget()
 
             window.extend_layout(window['-DATAFRAME-'],
                                  [
@@ -231,3 +237,15 @@ while True:
             ys += 1
         else:
             window['-OUT-']('There are enough Y\'s')
+
+    if event == '-MPLOT-':
+        fig, ax = multi_plot()  # Get handles of the plot figure
+        tabName = ''.join([' = f(', value['-XMULTI-'], ')'])
+        if f'-TAB-{tabName}-' not in window.AllKeysDict:
+            window['-MAIN-'].add_tab(
+                sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))  # Add a new tab for the new fig
+            figAgg = draw_figure(window[f'-GRAPH-{tabName}-'].TKCanvas, fig)  # Link the fig to the canvas
+            figs[tabName] = fig
+        else:
+            window[f'-TAB-{tabName}-'](visible=True)
+        window[f'-TAB-{tabName}-'].select()  # Select the newly added tab
