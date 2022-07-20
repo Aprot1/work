@@ -37,26 +37,21 @@ def plot_data():    # Plot a 2D line plot
 # def multi_plot():
 
 
-def plot_spectrum(data):
-
-    spectre = pd.read_csv(data, sep='\t', header=27, engine='python', decimal='.') # read the raw data without the header
-    fic_header = pd.read_csv(data, sep='\t', header=None, nrows=26, engine='python', decimal='.') # read the header values
-    fic_header.columns = ["Name", "value"] # rename the columns for the header
-
-    time_step = 1 / np.float64(fic_header.value[1]) # compute time step from sampling rate
-    step_numb = spectre.shape[1] - 2
-    X_axis = np.array(spectre.iloc[:, 1]) # x axis is the first column of the raw data
+def plot_spectrum():
+    time_step = 1 / np.float64(fic_header.value[1])  # compute time step from sampling rate
+    step_numb = data.shape[1] - 2
+    X_axis = np.array(data.iloc[:, 1])  # x axis is the first column of the raw data
     #MQ = make_MQ(abs(X_axis), np.float64(fic_header.value[21]), COEFB0, COEFB1, COEFB2, COEFB4)
     Y_axis = np.arange(0, step_numb * time_step, time_step) # create a list to provide the time of aquisition
 
-    spectre_image = spectre.drop(spectre.columns[0], axis=1)
+    spectre_image = data.drop(data.columns[0], axis=1)
     spectre_image = spectre_image.drop(spectre_image.columns[0], axis=1)
     spectre_image = spectre_image.to_numpy()
 
-    indexes = unravel_index(spectre_image.argmax(), spectre_image.shape) # find max of the 2D array with coordinates
+    indexes = unravel_index(spectre_image.argmax(), spectre_image.shape)  # find max of the 2D array with coordinates
 
     # Generate the plot
-    fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=[12, 12], constrained_layout=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(3)
 
     cmap = ax1.pcolormesh(Y_axis, X_axis, spectre_image)
     fig.colorbar(cmap, ax=ax1)
@@ -64,9 +59,7 @@ def plot_spectrum(data):
     ax1.axvline(x=Y_axis[indexes[1]], color='r', linestyle='-')
     ax1.set_xlabel('Times [s]')
     ax1.set_ylabel('M/Q [arb. units]')
-    #title = f + ', Pinj = ' + fic_header.value[8] + ', Pext = ' + fic_header.value[9] + ', HT = ' + str(
-    #    float(fic_header.value[21]))
-    #ax1.set_title(title)
+
 
     toto = spectre_image[:, indexes[1]]
     toto[toto < 0] = 0
@@ -80,7 +73,6 @@ def plot_spectrum(data):
     toto2 = spectre_image[indexes[0], :]
     ax3.set_xlim(min(Y_axis), max(Y_axis))
     ax3.plot(Y_axis, toto2, color='b')
-    #ax3.plot(data["TIME (s)"], data["daq_U_Anode (Vdaq)"].values / 500, label='U_Anode (Vdaq)/10', color='k')
     ax3.set_xlabel('Times [s]')
     ax3.set_ylabel('Intensity [mA]')
 
@@ -202,12 +194,21 @@ while True:
             window['-OUT-']('')
             file = value['-PATH-']
             ext = file.split('.')[-1]   # Find extension
+            filetype = file.split('-')[-1]
+
 
             if ext == 'csv' or 'txt':   # Different methods to open file depending on extension
                 sep = sepDict[value['-SEPARATOR-']]
                 header = int(value['-HEADER-'])
                 dec = value['-DEC-']
-                data = pd.read_csv(file, sep=sep, header=header, decimal=dec, encoding='latin-1')
+                if filetype == 'Spectrum.txt':
+                    data = pd.read_csv(file, sep=sep, header=header+1, decimal=dec, engine='python', encoding='latin-1')
+                    fic_header = pd.read_csv(file, sep=sep, header=None, nrows=header, engine='python', decimal=dec)  # read the header values
+                    fic_header.columns = ["Name", "value"]  # rename the columns for the header
+                else:
+                    data = pd.read_csv(file, sep=sep, header=header, decimal=dec, engine='python', encoding='latin-1')
+                    fic_header = pd.read_csv(file, sep=sep, header=None, nrows=header, engine='python', decimal=dec)  # read the header values
+                    fic_header.columns = ["Name", "value"]  # rename the columns for the header
 
             values = data.values.tolist()   # Table element takes lists for value & headings
             headings = data.columns.tolist()
@@ -221,23 +222,26 @@ while True:
                 window['-DATA-'].Widget.master.pack_forget()
                 window['-DELETE-'].Widget.master.pack_forget()
 
-            window.extend_layout(window['-DATAFRAME-'],
-                                 [
-                                     [sg.Table(values=values, headings=headings, justification='right',
-                                               num_rows=30, vertical_scroll_only=False, expand_x=False,
-                                               key='-DATA-')],
-                                     [sg.Button('Delete Selected', key='-DELETE-')]
-                                 ])
+            if filetype == 'Spectrum.txt':
+                pass
+            else:
+                window.extend_layout(window['-DATAFRAME-'],
+                                     [
+                                         [sg.Table(values=values, headings=headings, justification='right',
+                                                   num_rows=30, vertical_scroll_only=False, expand_x=False,
+                                                   key='-DATA-')],
+                                         [sg.Button('Delete Selected', key='-DELETE-')]
+                                     ])
 
-            window['-DATAFRAME-'](visible=True)  # Make -DATAFRAME- element visible
-            window['-X-'](values=headings)  # Update combo boxes with heading values
-            window['-Y-'](values=headings)
-            window['-XMULTI-'](values=headings)
-            i = 0
-            while i < ys:
-                key = ''.join(['-YMULTI', str(i), '-'])
-                window[key](values=headings)
-                i += 1
+                window['-DATAFRAME-'](visible=True)  # Make -DATAFRAME- element visible
+                window['-X-'](values=headings)  # Update combo boxes with heading values
+                window['-Y-'](values=headings)
+                window['-XMULTI-'](values=headings)
+                i = 0
+                while i < ys:
+                    key = ''.join(['-YMULTI', str(i), '-'])
+                    window[key](values=headings)
+                    i += 1
 
         except ValueError:
             window['-OUT-'].update('ValueError')
@@ -290,7 +294,7 @@ while True:
             window['-OUT-']('There are enough Y\'s')
 
     if event == '-SPECPLOT-':   # Plot the selected data
-        fig, ax1, ax2, ax3 = plot_spectrum(file)   # Get handles of the plot figure
+        fig, ax1, ax2, ax3 = plot_spectrum()   # Get handles of the plot figure
         tabName = 'Spectrum'
         if f'-TAB-{tabName}-' not in window.AllKeysDict:
             window['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))   # Add a new tab for the new fig
