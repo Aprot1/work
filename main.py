@@ -3,6 +3,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import MaxNLocator
 import os
 import pandas as pd
+import numpy as np
+from numpy import unravel_index
 import PySimpleGUI as sg
 
 
@@ -35,7 +37,54 @@ def plot_data():    # Plot a 2D line plot
 # def multi_plot():
 
 
-#def plot_spectrum():
+def plot_spectrum(data):
+
+    spectre = pd.read_csv(data, sep='\t', header=27, engine='python', decimal='.') # read the raw data without the header
+    fic_header = pd.read_csv(data, sep='\t', header=None, nrows=26, engine='python', decimal='.') # read the header values
+    fic_header.columns = ["Name", "value"] # rename the columns for the header
+
+    time_step = 1 / np.float64(fic_header.value[1]) # compute time step from sampling rate
+    step_numb = spectre.shape[1] - 2
+    X_axis = np.array(spectre.iloc[:, 1]) # x axis is the first column of the raw data
+    #MQ = make_MQ(abs(X_axis), np.float64(fic_header.value[21]), COEFB0, COEFB1, COEFB2, COEFB4)
+    Y_axis = np.arange(0, step_numb * time_step, time_step) # create a list to provide the time of aquisition
+
+    spectre_image = spectre.drop(spectre.columns[0], axis=1)
+    spectre_image = spectre_image.drop(spectre_image.columns[0], axis=1)
+    spectre_image = spectre_image.to_numpy()
+
+    indexes = unravel_index(spectre_image.argmax(), spectre_image.shape) # find max of the 2D array with coordinates
+
+    # Generate the plot
+    fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=[12, 12], constrained_layout=True)
+
+    cmap = ax1.pcolormesh(Y_axis, X_axis, spectre_image)
+    fig.colorbar(cmap, ax=ax1)
+    ax1.axhline(y=X_axis[indexes[0]], color='b', linestyle='-')
+    ax1.axvline(x=Y_axis[indexes[1]], color='r', linestyle='-')
+    ax1.set_xlabel('Times [s]')
+    ax1.set_ylabel('M/Q [arb. units]')
+    #title = f + ', Pinj = ' + fic_header.value[8] + ', Pext = ' + fic_header.value[9] + ', HT = ' + str(
+    #    float(fic_header.value[21]))
+    #ax1.set_title(title)
+
+    toto = spectre_image[:, indexes[1]]
+    toto[toto < 0] = 0
+    ax2.plot(X_axis, toto, color='r')
+    ax2.set_xlim(min(X_axis), max(X_axis))
+    ax2.set_ylim(min(toto), max(toto) + max(toto) * 0.2)
+    ax2.set_xlabel('M/Q [arb. units]')
+    ax2.set_ylabel('Intensity [mA]')
+
+
+    toto2 = spectre_image[indexes[0], :]
+    ax3.set_xlim(min(Y_axis), max(Y_axis))
+    ax3.plot(Y_axis, toto2, color='b')
+    #ax3.plot(data["TIME (s)"], data["daq_U_Anode (Vdaq)"].values / 500, label='U_Anode (Vdaq)/10', color='k')
+    ax3.set_xlabel('Times [s]')
+    ax3.set_ylabel('Intensity [mA]')
+
+    return fig, ax1, ax2, ax3  # Return graph handlers
 
 
 def delete_figure_agg(figure_agg):  # Delete fig to clear the canvas
@@ -98,7 +147,8 @@ multi_plot_tab = [
 ]
 
 spectrum_plot_tab = [
-    [sg.T('Spectrum', size=(5, 1))]
+    [sg.T('Spectrum', size=(5, 1)),
+     sg.Button('Plot Spectrum', key='-SPECPLOT-')]
 ]
 
 file_frame = [
@@ -238,3 +288,14 @@ while True:
             ys += 1
         else:
             window['-OUT-']('There are enough Y\'s')
+
+    if event == '-SPECPLOT-':   # Plot the selected data
+        fig, ax1, ax2, ax3 = plot_spectrum(file)   # Get handles of the plot figure
+        tabName = 'Spectrum'
+        if f'-TAB-{tabName}-' not in window.AllKeysDict:
+            window['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))   # Add a new tab for the new fig
+            figAgg = draw_figure(window[f'-GRAPH-{tabName}-'].TKCanvas, fig)  # Link the fig to the canvas
+            figs[tabName] = fig
+        else:
+            window[f'-TAB-{tabName}-'](visible=True)
+        window[f'-TAB-{tabName}-'].select()  # Select the newly added tab
