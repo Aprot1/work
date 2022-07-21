@@ -121,24 +121,24 @@ def tab(name):  # Create and return the new tab layout
 
 
 def tab_spectrum(name):  # Create and return the new tab layout
-    lay = [
+    lay_settings = [
         [sg.T('COEFB0'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
         [sg.T('COEFB1'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
         [sg.T('COEFB2'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
-        [sg.T('COEFB4'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
+        [sg.T('COEFB4'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')]]
 
+    lay_cut = [
         [sg.T('Vertical Cut'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
-        [sg.T('Horizontal Cut'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
+        [sg.T('Horizontal Cut'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')]]
 
-        [sg.Button('Save plot', key=f'-SPLOT-{name}-'),
-         sg.Button('Close tab', key=f'-CLOSET-{name}-')],
-
+    lay = [
+        [sg.Frame('Setting A/Q', layout=lay_settings),
+        sg.Frame('Cut', layout=lay_cut),
+        sg.Button('UPDATE', key='-UPDATE-')],
         [sg.Graph(canvas_size=cSize, graph_bottom_left=(0, 0), graph_top_right=cSize,
                   key=f'-GRAPH-{name}-')]
     ]
-    lay = [[
-        sg.Frame('', layout=lay)
-    ]]
+
     return lay
 
 
