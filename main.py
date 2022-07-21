@@ -42,7 +42,7 @@ def multi_plot():
 
     ax = plt.gca()
     for i in yList:
-        data.plot(x, value[i], ax=ax)
+        data.plot(x, value[i], figsize=fSize, ax=ax)
     ax.set_xlabel(x)
     ax.xaxis.set_major_locator(MaxNLocator(7))
     ax.yaxis.set_major_locator(MaxNLocator(7))
@@ -247,7 +247,7 @@ while True:
 
     if event == '-MPLOT-':
         fig = multi_plot()  # Get handles of the plot figure
-        tabName = ''.join([' = f(', value['-XMULTI-'], ')'])
+        tabName = ''.join(['f(', value['-XMULTI-'], ')'])
         if f'-TAB-{tabName}-' not in window.AllKeysDict:
             window['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))  # Add a new tab for the new fig
             figAgg = draw_figure(window[f'-GRAPH-{tabName}-'].TKCanvas, fig)  # Link the fig to the canvas
