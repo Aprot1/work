@@ -8,6 +8,14 @@ from numpy import unravel_index
 import PySimpleGUI as sg
 
 
+# VARS CONSTS:
+
+# New figure and plot variables so we can manipulate them
+dataSize = 1000  # For synthetic data
+_VARS = {'window': False,
+         'fig_agg': False,
+         'pltFig': False}
+
 # ------ FUNCTIONS ------
 def draw_figure(canvas, figure):    # Function for drawing the figure and link it to canvas
     figureCanvasAgg = FigureCanvasTkAgg(figure, canvas)
@@ -34,6 +42,21 @@ def plot_data():    # Plot a 2D line plot
     return fig, ax  # Return graph handlers
 
 
+# Recreate Synthetic data, clear existing figre and redraw plot.
+def updateChart():
+    _VARS['fig_agg'].get_tk_widget().forget()
+    dataXY = makeSynthData()
+    # plt.cla()
+    plt.clf()
+    #plot_spectrum()
+    plt.plot(dataXY[0], dataXY[1], '.k')
+    _VARS['fig_agg'] = draw_figure(_VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+
+def makeSynthData():
+    xData = np.random.randint(100, size=dataSize)
+    yData = np.linspace(0, dataSize, num=dataSize, dtype=int)
+    return (xData, yData)
+
 # def multi_plot():
 
 
@@ -51,7 +74,7 @@ def plot_spectrum():
     indexes = unravel_index(spectre_image.argmax(), spectre_image.shape)  # find max of the 2D array with coordinates
 
     # Generate the plot
-    fig, (ax1, ax2, ax3) = plt.subplots(3)
+    fig, (ax1, ax2, ax3) = plt.subplots(3, constrained_layout=True)
 
     cmap = ax1.pcolormesh(Y_axis, X_axis, spectre_image)
     fig.colorbar(cmap, ax=ax1)
@@ -165,16 +188,14 @@ main_tab_layout = [
     [sg.Frame('Data', layout=[], visible=False, key='-DATAFRAME-')]
 ]
 
-layout = [
-    [sg.TabGroup([[sg.Tab('Main', main_tab_layout, key='-MAINTAB-')]], key='-MAIN-')]
-]
+layout = [[sg.TabGroup([[sg.Tab('Main', main_tab_layout, key='-MAINTAB-')]], key='-MAIN-')]]
 
 sg.theme('DarkBlue')
-window = sg.Window('Data visualization', layout, size=(wW, wH), finalize=True)  # Create main window
+_VARS['window'] = sg.Window('Data visualization', layout, size=(wW, wH), finalize=True)  # Create main window
 
 # ------ MAIN WINDOW LOOP ------
 while True:
-    event, value = window.read()    # Scan window for events
+    event, value = _VARS['window'] .read()    # Scan window for events
 
     if event == sg.WIN_CLOSED:  # Quit X button
         break
@@ -185,13 +206,13 @@ while True:
             file = open(file)
             prev = file.read()
             file.close()
-            window['-OUT-'](prev)    # Update preview with raw file
+            _VARS['window']['-OUT-'](prev)    # Update preview with raw file
         except FileNotFoundError:
             pass
 
     if event == '-LOAD-':   # Load Button
         try:
-            window['-OUT-']('')
+            _VARS['window']['-OUT-']('')
             file = value['-PATH-']
             ext = file.split('.')[-1]   # Find extension
             filetype = file.split('-')[-1]
@@ -214,18 +235,18 @@ while True:
             headings = data.columns.tolist()
             f = file.split('/')  # Get file name without the whole path
             f = ''.join(['Data : ', f[-1]])
-            window['-DATAFRAME-'](f)  # Change frame name
+            _VARS['window']['-DATAFRAME-'](f)  # Change frame name
             
-            if '-DATA-' in window.AllKeysDict:
-                window['-DATA-'].update(visible=False)
-                window['-DELETE-'].update(visible=False)
-                window['-DATA-'].Widget.master.pack_forget()
-                window['-DELETE-'].Widget.master.pack_forget()
+            if '-DATA-' in _VARS['window'].AllKeysDict:
+                _VARS['window']['-DATA-'].update(visible=False)
+                _VARS['window']['-DELETE-'].update(visible=False)
+                _VARS['window']['-DATA-'].Widget.master.pack_forget()
+                _VARS['window']['-DELETE-'].Widget.master.pack_forget()
 
             if filetype == 'Spectrum.txt':
                 pass
             else:
-                window.extend_layout(window['-DATAFRAME-'],
+                _VARS['window'].extend_layout(_VARS['window']['-DATAFRAME-'],
                                      [
                                          [sg.Table(values=values, headings=headings, justification='right',
                                                    num_rows=30, vertical_scroll_only=False, expand_x=False,
@@ -233,39 +254,39 @@ while True:
                                          [sg.Button('Delete Selected', key='-DELETE-')]
                                      ])
 
-                window['-DATAFRAME-'](visible=True)  # Make -DATAFRAME- element visible
-                window['-X-'](values=headings)  # Update combo boxes with heading values
-                window['-Y-'](values=headings)
-                window['-XMULTI-'](values=headings)
+                _VARS['window']['-DATAFRAME-'](visible=True)  # Make -DATAFRAME- element visible
+                _VARS['window']['-X-'](values=headings)  # Update combo boxes with heading values
+                _VARS['window']['-Y-'](values=headings)
+                _VARS['window']['-XMULTI-'](values=headings)
                 i = 0
                 while i < ys:
                     key = ''.join(['-YMULTI', str(i), '-'])
-                    window[key](values=headings)
+                    _VARS['window'][key](values=headings)
                     i += 1
 
         except ValueError:
-            window['-OUT-'].update('ValueError')
+            _VARS['window']['-OUT-'].update('ValueError')
         except FileNotFoundError:
-            window['-OUT-'].update('File not found')
+            _VARS['window']['-OUT-'].update('File not found')
         except KeyError:
-            window['-OUT-'].update('Wrong Separator')
+            _VARS['window']['-OUT-'].update('Wrong Separator')
 
     if event == '-PLOT-':   # Plot the selected data
-        fig, ax = plot_data()   # Get handles of the plot figure
+        _VARS['pltFig'], ax = plot_data()   # Get handles of the plot figure
         tabName = ''.join([value['-Y-'], ' = f(', value['-X-'], ')'])
-        if f'-TAB-{tabName}-' not in window.AllKeysDict:
-            window['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))   # Add a new tab for the new fig
-            figAgg = draw_figure(window[f'-GRAPH-{tabName}-'].TKCanvas, fig)  # Link the fig to the canvas
-            figs[tabName] = fig
+        if f'-TAB-{tabName}-' not in _VARS['window'].AllKeysDict:
+            _VARS['window']['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))   # Add a new tab for the new fig
+            _VARS['fig_agg'] = draw_figure(_VARS['window'][f'-GRAPH-{tabName}-'].TKCanvas, _VARS['pltFig'])  # Link the fig to the canvas
+            figs[tabName] = _VARS['pltFig']
         else:
-            window[f'-TAB-{tabName}-'](visible=True)
-        window[f'-TAB-{tabName}-'].select()  # Select the newly added tab
+            _VARS['window'][f'-TAB-{tabName}-'](visible=True)
+        _VARS['window'][f'-TAB-{tabName}-'].select()  # Select the newly added tab
 
     if event == '-DELETE-':  # Delete the selected data rows
         data.drop(value['-DATA-'], inplace=True)    # Delete data
         data.reset_index(drop=True, inplace=True)   # Reset index
         values = data.values.tolist()
-        window['-DATA-'](values=values)  # Update the -DATA- table
+        _VARS['window']['-DATA-'](values=values)  # Update the -DATA- table
 
     if event.startswith('-SPLOT-'):    # Save plot button, the name depends on the tab it is in
         folder = sg.popup_get_folder('On which folder to save ?')
@@ -274,32 +295,37 @@ while True:
                 os.mkdir(folder)
             tabName = event.split('SPLOT')[-1]  # get the tab name
             tabName = tabName[1:-1]
-            fig = figs[tabName]
+            _VARS['pltFig']  = figs[tabName]
             fileName = value[f'-SAVENAME-{tabName}-']
             fileName = ''.join([folder, '/', fileName, '.png'])
-            fig.savefig(fileName)   # save plot with given path/name
+            _VARS['pltFig'] .savefig(fileName)   # save plot with given path/name
 
     if event.startswith('-CLOSET-'):    # Delete tab button, the tab name depends on the tab it is in
         tabName = event.split('CLOSET')[-1]
         tabName = tabName[1:-1]
-        window[f'-TAB-{tabName}-'](visible=False)
+        _VARS['window'][f'-TAB-{tabName}-'](visible=False)
 
     if event == '-ADDY-':   # Add a Y Combo to choose multiple data to plot
         if ys <= 4:
-            window.extend_layout(window['-MULTIPLOT-'], new_y(ys))
+            _VARS['window'].extend_layout(_VARS['window']['-MULTIPLOT-'], new_y(ys))
             key = ''.join(['-YMULTI', str(ys), '-'])
-            window[key](values=headings)
+            _VARS['window'][key](values=headings)
             ys += 1
         else:
-            window['-OUT-']('There are enough Y\'s')
+            _VARS['window']['-OUT-']('There are enough Y\'s')
 
     if event == '-SPECPLOT-':   # Plot the selected data
-        fig, ax1, ax2, ax3 = plot_spectrum()   # Get handles of the plot figure
+        _VARS['pltFig'], ax1, ax2, ax3 = plot_spectrum()   # Get handles of the plot figure
         tabName = 'Spectrum'
-        if f'-TAB-{tabName}-' not in window.AllKeysDict:
-            window['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))   # Add a new tab for the new fig
-            figAgg = draw_figure(window[f'-GRAPH-{tabName}-'].TKCanvas, fig)  # Link the fig to the canvas
-            figs[tabName] = fig
+        if f'-TAB-{tabName}-' not in _VARS['window'].AllKeysDict:
+            _VARS['window']['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))
+            _VARS['fig_agg'] = draw_figure(_VARS['window'][f'-GRAPH-{tabName}-'].TKCanvas, _VARS['pltFig'])  # Link the fig to the canvas
+            figs[tabName] = _VARS['pltFig']
         else:
-            window[f'-TAB-{tabName}-'](visible=True)
-        window[f'-TAB-{tabName}-'].select()  # Select the newly added tab
+            _VARS['window'][f'-TAB-{tabName}-'](visible=True)
+        _VARS['window'][f'-TAB-{tabName}-'].select()  # Select the newly added tab
+
+    if event == '-UPDATE-':
+        updateChart()
+
+
