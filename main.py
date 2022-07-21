@@ -15,16 +15,17 @@ def draw_figure(canvas, figure):    # Function for drawing the figure and link i
 
 
 def plot_data():    # Plot a 2D line plot
+    x = value['-X-']
+    y = value['-Y-']
     if value['-TIME-']:
-        data[value['-X-']] = pd.to_datetime(data[value['-X-']])
+        data[x] = pd.to_datetime(data[x])
     else:
-        data[value['-X-']] = data[value['-X-']].astype(float)
+        data[x] = data[x].astype(float)
 
-    data[value['-Y-']] = data[value['-Y-']].astype(float)
-    ax = data.plot(value['-X-'], value['-Y-'], figsize=fSize)
-    ax.set_xlabel(value['-X-'])
-    ax.set_ylabel(value['-Y-'])
-    # ax.plot(x, y)
+    data[y] = data[y].astype(float)
+    ax = data.plot(x, y, figsize=fSize)
+    ax.set_xlabel(x)
+    ax.set_ylabel(y)
     ax.xaxis.set_major_locator(MaxNLocator(7))
     ax.yaxis.set_major_locator(MaxNLocator(7))
     ax.grid()
@@ -33,13 +34,20 @@ def plot_data():    # Plot a 2D line plot
 
 
 def multi_plot():
-    ax = data.plot(value['-XMULTI-'], (value[i] for i in yList))
+    if value['-TIMEMULTI-']:
+        data[value['-XMULTI-']] = pd.to_datetime(data[value['-XMULTI-']])
+    else:
+        data[value['-XMULTI-']] = data[value['-XMULTI-']].astype(float)
+
+    ax = plt.gca()
+    for i in yList:
+        data.plot(value['-XMULTI-'], value[i], ax=ax)
     ax.set_xlabel(value['-XMULTI-'])
     ax.xaxis.set_major_locator(MaxNLocator(7))
     ax.yaxis.set_major_locator(MaxNLocator(7))
     ax.grid()
     fig = ax.get_figure()
-    return fig, ax  # Return graph handlers
+    return fig  # Return graph handlers
 
 
 def delete_figure_agg(figure_agg):  # Delete fig to clear the canvas
@@ -63,7 +71,6 @@ def new_y(y):
     key = ''.join(['-YMULTI', str(y), '-'])
     txt = ''.join(['Y Axis ', str(y)])
     yList.append(key)
-    print(yList)
     return [[sg.T(txt), sg.Combo([], size=(9, 1), key=key, enable_events=True)]]
 
 
@@ -196,7 +203,7 @@ while True:
             window['-OUT-'].update('Wrong Separator')
 
     if event == '-PLOT-':   # Plot the selected data
-        fig, ax = plot_data()   # Get handles of the plot figure
+        fig = plot_data()   # Get handles of the plot figure
         tabName = ''.join([value['-Y-'], ' = f(', value['-X-'], ')'])
         if f'-TAB-{tabName}-' not in window.AllKeysDict:
             window['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))   # Add a new tab for the new fig
@@ -239,11 +246,10 @@ while True:
             window['-OUT-']('There are enough Y\'s')
 
     if event == '-MPLOT-':
-        fig, ax = multi_plot()  # Get handles of the plot figure
+        fig = multi_plot()  # Get handles of the plot figure
         tabName = ''.join([' = f(', value['-XMULTI-'], ')'])
         if f'-TAB-{tabName}-' not in window.AllKeysDict:
-            window['-MAIN-'].add_tab(
-                sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))  # Add a new tab for the new fig
+            window['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))  # Add a new tab for the new fig
             figAgg = draw_figure(window[f'-GRAPH-{tabName}-'].TKCanvas, fig)  # Link the fig to the canvas
             figs[tabName] = fig
         else:
