@@ -136,6 +136,9 @@ def tab_spectrum(name):  # Create and return the new tab layout
         [sg.Graph(canvas_size=cSize, graph_bottom_left=(0, 0), graph_top_right=cSize,
                   key=f'-GRAPH-{name}-')]
     ]
+    lay = [[
+        sg.Frame('', layout=lay)
+    ]]
     return lay
 
 
