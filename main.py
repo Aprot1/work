@@ -122,8 +122,15 @@ def tab(name):  # Create and return the new tab layout
 
 def tab_spectrum(name):  # Create and return the new tab layout
     lay = [
-        [sg.Input(f'{name}', key=f'-SAVENAME-{name}-'),
-         sg.Button('Save plot', key=f'-SPLOT-{name}-'),
+        [sg.T('COEFB0'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
+        [sg.T('COEFB1'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
+        [sg.T('COEFB2'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
+        [sg.T('COEFB4'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
+
+        [sg.T('Vertical Cut'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
+        [sg.T('Horizontal Cut'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
+
+        [sg.Button('Save plot', key=f'-SPLOT-{name}-'),
          sg.Button('Close tab', key=f'-CLOSET-{name}-')],
 
         [sg.Graph(canvas_size=cSize, graph_bottom_left=(0, 0), graph_top_right=cSize,
@@ -184,9 +191,9 @@ file_frame = [
      sg.FileBrowse()],
 
     [sg.T('Separator'),
-     sg.Combo(list(sepDict.keys()), default_value=';', size=7, key='-SEPARATOR-'),
+     sg.Combo(list(sepDict.keys()), default_value='[SPACE]', size=7, key='-SEPARATOR-'),
      sg.T('Header'),
-     sg.Input('0', size=(3, 1), key='-HEADER-'),
+     sg.Input('26', size=(3, 1), key='-HEADER-'),
      sg.T('Decimal'),
      sg.Input('.', size=(3, 1), key='-DEC-'),
      sg.Button('Load', key='-LOAD-')]
