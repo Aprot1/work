@@ -30,19 +30,20 @@ def plot_data():    # Plot a 2D line plot
     ax.yaxis.set_major_locator(MaxNLocator(7))
     ax.grid()
     fig = ax.get_figure()
-    return fig, ax  # Return graph handlers
+    return fig  # Return graph handlers
 
 
 def multi_plot():
+    x = value['-XMULTI-']
     if value['-TIMEMULTI-']:
-        data[value['-XMULTI-']] = pd.to_datetime(data[value['-XMULTI-']])
+        data[x] = pd.to_datetime(data[x])
     else:
-        data[value['-XMULTI-']] = data[value['-XMULTI-']].astype(float)
+        data[x] = data[x].astype(float)
 
     ax = plt.gca()
     for i in yList:
-        data.plot(value['-XMULTI-'], value[i], ax=ax)
-    ax.set_xlabel(value['-XMULTI-'])
+        data.plot(x, value[i], ax=ax)
+    ax.set_xlabel(x)
     ax.xaxis.set_major_locator(MaxNLocator(7))
     ax.yaxis.set_major_locator(MaxNLocator(7))
     ax.grid()
@@ -84,7 +85,6 @@ cSize = (wW, wH)  # Canvas size
 fSize = ((wW-20)*px, (wH-100)*px)  # Fig size
 dSize = (wW/3, wH)   # Data table size
 headings = []
-plotted = False
 yList = ['-YMULTI0-']
 ys = 1
 
@@ -137,7 +137,7 @@ layout = [
 ]
 
 sg.theme('DarkBlue')
-window = sg.Window('Data visualization', layout, size=(wW, wH), finalize=True)  # Create main window
+window = sg.Window('Data visualization', layout, size=(wW, wH))  # Create main window
 
 # ------ MAIN WINDOW LOOP ------
 while True:
