@@ -17,7 +17,8 @@ _VARS = {'window': False,
          'pltFig': False}
 
 # ------ FUNCTIONS ------
-def draw_figure(canvas, figure):    # Function for drawing the figure and link it to canvas
+
+def draw_figure(canvas, figure):  # Function for drawing the figure and link it to canvas
     figureCanvasAgg = FigureCanvasTkAgg(figure, canvas)
     figureCanvasAgg.draw()
     figureCanvasAgg.get_tk_widget().pack(side='top', fill='both', expand=1)
@@ -42,8 +43,7 @@ def plot_data():    # Plot a 2D line plot
     return fig, ax  # Return graph handlers
 
 
-# Recreate Synthetic data, clear existing figre and redraw plot.
-def updateChart():
+def update_chart():  # Recreate Synthetic data, clear existing figre and redraw plot.
     _VARS['fig_agg'].get_tk_widget().forget()
     dataXY = makeSynthData()
     # plt.cla()
@@ -51,6 +51,7 @@ def updateChart():
     #plot_spectrum()
     plt.plot(dataXY[0], dataXY[1], '.k')
     _VARS['fig_agg'] = draw_figure(_VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+
 
 def makeSynthData():
     xData = np.random.randint(100, size=dataSize)
@@ -115,6 +116,18 @@ def tab(name):  # Create and return the new tab layout
         [sg.Input(f'{name}', key=f'-SAVENAME-{name}-'),
          sg.Button('Save plot', key=f'-SPLOT-{name}-'),
          sg.Button('Close tab', key=f'-CLOSET-{name}-')]
+    ]
+    return lay
+
+
+def tab_spectrum(name):  # Create and return the new tab layout
+    lay = [
+        [sg.Input(f'{name}', key=f'-SAVENAME-{name}-'),
+         sg.Button('Save plot', key=f'-SPLOT-{name}-'),
+         sg.Button('Close tab', key=f'-CLOSET-{name}-')],
+
+        [sg.Graph(canvas_size=cSize, graph_bottom_left=(0, 0), graph_top_right=cSize,
+                  key=f'-GRAPH-{name}-')]
     ]
     return lay
 
@@ -195,7 +208,7 @@ _VARS['window'] = sg.Window('Data visualization', layout, size=(wW, wH), finaliz
 
 # ------ MAIN WINDOW LOOP ------
 while True:
-    event, value = _VARS['window'] .read()    # Scan window for events
+    event, value = _VARS['window'].read()    # Scan window for events
 
     if event == sg.WIN_CLOSED:  # Quit X button
         break
@@ -318,14 +331,11 @@ while True:
         _VARS['pltFig'], ax1, ax2, ax3 = plot_spectrum()   # Get handles of the plot figure
         tabName = 'Spectrum'
         if f'-TAB-{tabName}-' not in _VARS['window'].AllKeysDict:
-            _VARS['window']['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab(tabName), key=f'-TAB-{tabName}-'))
+            _VARS['window']['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab_spectrum(tabName), key=f'-TAB-{tabName}-'))
             _VARS['fig_agg'] = draw_figure(_VARS['window'][f'-GRAPH-{tabName}-'].TKCanvas, _VARS['pltFig'])  # Link the fig to the canvas
             figs[tabName] = _VARS['pltFig']
         else:
             _VARS['window'][f'-TAB-{tabName}-'](visible=True)
         _VARS['window'][f'-TAB-{tabName}-'].select()  # Select the newly added tab
-
-    if event == '-UPDATE-':
-        updateChart()
 
 
