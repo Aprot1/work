@@ -40,6 +40,8 @@ def multi_plot():
     else:
         data[x] = data[x].astype(float)
 
+    plt.cla()
+    plt.clf()
     ax = plt.gca()
     for i in yList:
         data.plot(x, value[i], figsize=fSize, ax=ax)
@@ -237,15 +239,15 @@ while True:
         window[f'-TAB-{tabName}-'](visible=False)
 
     if event == '-ADDY-':   # Add a Y Combo to choose multiple data to plot
-        if ys <= 4:
-            window.extend_layout(window['-MULTIPLOT-'], new_y(ys))
+        if ys <= 4:  # Limit to 4 total data to plot
+            window.extend_layout(window['-MULTIPLOT-'], new_y(ys))  # add a Y combo box
             key = ''.join(['-YMULTI', str(ys), '-'])
             window[key](values=headings)
             ys += 1
         else:
             window['-OUT-']('There are enough Y\'s')
 
-    if event == '-MPLOT-':
+    if event == '-MPLOT-':  # TO plot multiple data on the same graph
         fig = multi_plot()  # Get handles of the plot figure
         tabName = ''.join(['f(', value['-XMULTI-'], ')'])
         if f'-TAB-{tabName}-' not in window.AllKeysDict:
