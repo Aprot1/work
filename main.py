@@ -43,14 +43,14 @@ def plot_data():    # Plot a 2D line plot
     return fig, ax  # Return graph handlers
 
 
-def update_chart():  # Recreate Synthetic data, clear existing figre and redraw plot.
+def update_chart():  # Recreate Synthetic data, clear existing figure and redraw plot.
     _VARS['fig_agg'].get_tk_widget().forget()
-    dataXY = makeSynthData()
+    #dataXY = makeSynthData()
     # plt.cla()
     plt.clf()
-    #plot_spectrum()
-    plt.plot(dataXY[0], dataXY[1], '.k')
-    _VARS['fig_agg'] = draw_figure(_VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+    _VARS['pltFig'], ax1, ax2, ax3 = plot_spectrum()
+    #plt.plot(dataXY[0], dataXY[1], '.k')
+    _VARS['fig_agg'] = draw_figure(_VARS['window']['-GRAPH-Spectrum-'].TKCanvas, _VARS['pltFig'])
 
 
 def makeSynthData():
@@ -122,10 +122,10 @@ def tab(name):  # Create and return the new tab layout
 
 def tab_spectrum(name):  # Create and return the new tab layout
     lay_settings = [
-        [sg.T('COEFB0'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
-        [sg.T('COEFB1'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
-        [sg.T('COEFB2'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
-        [sg.T('COEFB4'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')]]
+        [sg.T('COEFB0'), sg.Input(f'{name}', key='-COEFB0-')],
+        [sg.T('COEFB1'), sg.Input(f'{name}', key='-SAVENAME-{name}-')],
+        [sg.T('COEFB2'), sg.Input(f'{name}', key='-SAVENAME-{name}-')],
+        [sg.T('COEFB4'), sg.Input(f'{name}', key='-SAVENAME-{name}-')]]
 
     lay_cut = [
         [sg.T('Vertical Cut'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
@@ -138,7 +138,6 @@ def tab_spectrum(name):  # Create and return the new tab layout
         [sg.Graph(canvas_size=cSize, graph_bottom_left=(0, 0), graph_top_right=cSize,
                   key=f'-GRAPH-{name}-')]
     ]
-
     return lay
 
 
@@ -347,5 +346,8 @@ while True:
         else:
             _VARS['window'][f'-TAB-{tabName}-'](visible=True)
         _VARS['window'][f'-TAB-{tabName}-'].select()  # Select the newly added tab
+
+    if event == '-UPDATE-':   # Plot the selected data
+        update_chart()
 
 
