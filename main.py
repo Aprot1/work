@@ -8,14 +8,6 @@ from numpy import unravel_index
 import PySimpleGUI as sg
 
 
-# VARS CONSTS:
-
-# New figure and plot variables so we can manipulate them
-dataSize = 1000  # For synthetic data
-_VARS = {'window': False,
-         'fig_agg': False,
-         'pltFig': False}
-
 # ------ FUNCTIONS ------
 
 def draw_figure(canvas, figure):  # Function for drawing the figure and link it to canvas
@@ -43,56 +35,81 @@ def plot_data():    # Plot a 2D line plot
     return fig, ax  # Return graph handlers
 
 
+def find_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
+
+
 def update_chart():  # Recreate Synthetic data, clear existing figure and redraw plot.
+    COEFB0 = float(value['-COEFB0-'])
+    COEFB1 = float(value['-COEFB1-'])
+    COEFB2 = float(value['-COEFB2-'])
+    COEFB4 = float(value['-COEFB4-'])
+
     _VARS['fig_agg'].get_tk_widget().forget()
     #dataXY = makeSynthData()
     # plt.cla()
     plt.clf()
-    _VARS['pltFig'], ax1, ax2, ax3 = plot_spectrum()
-    #plt.plot(dataXY[0], dataXY[1], '.k')
-    _VARS['fig_agg'] = draw_figure(_VARS['window']['-GRAPH-Spectrum-'].TKCanvas, _VARS['pltFig'])
+    if value['-A/Q-CUT-'] == '' and value['-TIME-CUT-'] == '':
+        _VARS['pltFig'], ax1, ax2, ax3 = plot_spectrum(COEFB0, COEFB1, COEFB2, COEFB4)
+        _VARS['fig_agg'] = draw_figure(_VARS['window']['-GRAPH-Spectrum-'].TKCanvas, _VARS['pltFig'])
+    else:
+        _VARS['pltFig'], ax1, ax2, ax3 = plot_spectrum(COEFB0, COEFB1, COEFB2, COEFB4, pos_MQ_cut=value['-A/Q-CUT-'], pos_time_cut=value['-TIME-CUT-'])
+        _VARS['fig_agg'] = draw_figure(_VARS['window']['-GRAPH-Spectrum-'].TKCanvas, _VARS['pltFig'])
 
 
-def makeSynthData():
-    xData = np.random.randint(100, size=dataSize)
-    yData = np.linspace(0, dataSize, num=dataSize, dtype=int)
-    return (xData, yData)
+def make_MQ(Bfield, HT, COEFB0, COEFB1, COEFB2, COEFB4):
+    COEFF = (CONVBtoTesla*rho*c)/np.sqrt(2*HT*1000*uma)
+    B = COEFF*Bfield
+    B2 = (COEFF**2)*(Bfield**2)
+    B4 = B2**2
+    MQ = COEFB0 + COEFB1*B + COEFB2*B2 + COEFB4*B4
+    return(MQ)
 
-# def multi_plot():
 
-
-def plot_spectrum():
+def plot_spectrum(COEFB0, COEFB1, COEFB2, COEFB4, pos_MQ_cut=None, pos_time_cut=None):
+    indexes = [0, 0]
     time_step = 1 / np.float64(fic_header.value[1])  # compute time step from sampling rate
     step_numb = data.shape[1] - 2
     X_axis = np.array(data.iloc[:, 1])  # x axis is the first column of the raw data
-    #MQ = make_MQ(abs(X_axis), np.float64(fic_header.value[21]), COEFB0, COEFB1, COEFB2, COEFB4)
+    MQ = make_MQ(abs(X_axis), np.float64(fic_header.value[21]), COEFB0, COEFB1, COEFB2, COEFB4)
     Y_axis = np.arange(0, step_numb * time_step, time_step) # create a list to provide the time of aquisition
 
     spectre_image = data.drop(data.columns[0], axis=1)
     spectre_image = spectre_image.drop(spectre_image.columns[0], axis=1)
     spectre_image = spectre_image.to_numpy()
 
-    indexes = unravel_index(spectre_image.argmax(), spectre_image.shape)  # find max of the 2D array with coordinates
+    if (pos_MQ_cut is None) and (pos_time_cut is None):
+        indexes = unravel_index(spectre_image.argmax(), spectre_image.shape)  # find max of the 2D array with coordinates
+    elif (pos_MQ_cut is not None) or (pos_time_cut is not None):
+        if pos_MQ_cut == '':
+            pos_MQ_cut = 0
+        if pos_time_cut == '':
+            pos_time_cut = 0
+
+        indexes[0] = find_nearest(MQ, float(pos_MQ_cut))
+        indexes[1] = find_nearest(Y_axis, float(pos_time_cut))
+
+
 
     # Generate the plot
     fig, (ax1, ax2, ax3) = plt.subplots(3, constrained_layout=True)
 
-    cmap = ax1.pcolormesh(Y_axis, X_axis, spectre_image)
+    cmap = ax1.pcolormesh(Y_axis, MQ, spectre_image)
     fig.colorbar(cmap, ax=ax1)
-    ax1.axhline(y=X_axis[indexes[0]], color='b', linestyle='-')
+    ax1.axhline(y=MQ[indexes[0]], color='b', linestyle='-')
     ax1.axvline(x=Y_axis[indexes[1]], color='r', linestyle='-')
     ax1.set_xlabel('Times [s]')
-    ax1.set_ylabel('M/Q [arb. units]')
-
+    ax1.set_ylabel('A/Q [arb. units]')
 
     toto = spectre_image[:, indexes[1]]
     toto[toto < 0] = 0
-    ax2.plot(X_axis, toto, color='r')
-    ax2.set_xlim(min(X_axis), max(X_axis))
+    ax2.plot(MQ, toto, color='r')
+    ax2.set_xlim(min(MQ), max(MQ))
     ax2.set_ylim(min(toto), max(toto) + max(toto) * 0.2)
-    ax2.set_xlabel('M/Q [arb. units]')
+    ax2.set_xlabel('A/Q [arb. units]')
     ax2.set_ylabel('Intensity [mA]')
-
 
     toto2 = spectre_image[indexes[0], :]
     ax3.set_xlim(min(Y_axis), max(Y_axis))
@@ -122,21 +139,20 @@ def tab(name):  # Create and return the new tab layout
 
 def tab_spectrum(name):  # Create and return the new tab layout
     lay_settings = [
-        [sg.T('COEFB0'), sg.Input(f'{name}', key='-COEFB0-')],
-        [sg.T('COEFB1'), sg.Input(f'{name}', key='-SAVENAME-{name}-')],
-        [sg.T('COEFB2'), sg.Input(f'{name}', key='-SAVENAME-{name}-')],
-        [sg.T('COEFB4'), sg.Input(f'{name}', key='-SAVENAME-{name}-')]]
+        [sg.T('COEFB0'), sg.Input('-0.2', key='-COEFB0-')],
+        [sg.T('COEFB1'), sg.Input('0.00', key='-COEFB1-')],
+        [sg.T('COEFB2'), sg.Input('0.85', key='-COEFB2-')],
+        [sg.T('COEFB4'), sg.Input('0', key='-COEFB4-')]]
 
     lay_cut = [
-        [sg.T('Vertical Cut'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')],
-        [sg.T('Horizontal Cut'), sg.Input(f'{name}', key=f'-SAVENAME-{name}-')]]
+        [sg.T('Cut at A/Q'), sg.Input('', key='-A/Q-CUT-')],
+        [sg.T('Cut at time'), sg.Input('', key='-TIME-CUT-')]]
 
     lay = [
         [sg.Frame('Setting A/Q', layout=lay_settings),
         sg.Frame('Cut', layout=lay_cut),
         sg.Button('UPDATE', key='-UPDATE-')],
-        [sg.Graph(canvas_size=cSize, graph_bottom_left=(0, 0), graph_top_right=cSize,
-                  key=f'-GRAPH-{name}-')]
+        [sg.Graph(canvas_size=cSize, graph_bottom_left=(0, 0), graph_top_right=cSize, key=f'-GRAPH-{name}-')]
     ]
     return lay
 
@@ -148,6 +164,10 @@ def new_y(y):
 
 
 # ------ VARIABLES ------
+_VARS = {'window': False,
+         'fig_agg': False,
+         'pltFig': False}
+
 px = 1/plt.rcParams['figure.dpi']   # Unit conversion for plot size (fcking matplotlib works in INCHES...)
 wW, wH = sg.Window.get_screen_size()    # Get screen size to size the elements
 wH = wH - 70
@@ -159,7 +179,13 @@ dSize = (wW/3, wH)   # Data table size
 headings = []
 plotted = False
 ys = 1
-
+# variables for spectrum analysis
+c = 3e8
+c2 = c**2
+e = 1.602*1e-19
+uma = 931.49*1e6 # eV/c^2
+CONVBtoTesla = (2500*1e-4)/10
+rho = 0.65
 
 # ------ LAYOUT ------
 plot2D_tab = [
@@ -337,7 +363,11 @@ while True:
             _VARS['window']['-OUT-']('There are enough Y\'s')
 
     if event == '-SPECPLOT-':   # Plot the selected data
-        _VARS['pltFig'], ax1, ax2, ax3 = plot_spectrum()   # Get handles of the plot figure
+        COEFB0 = -0.2
+        COEFB1 = 0.00
+        COEFB2 = 0.85
+        COEFB4 = 0
+        _VARS['pltFig'], ax1, ax2, ax3 = plot_spectrum(COEFB0, COEFB1, COEFB2, COEFB4)   # Get handles of the plot figure
         tabName = 'Spectrum'
         if f'-TAB-{tabName}-' not in _VARS['window'].AllKeysDict:
             _VARS['window']['-MAIN-'].add_tab(sg.Tab(f'{tabName}', layout=tab_spectrum(tabName), key=f'-TAB-{tabName}-'))
@@ -349,5 +379,3 @@ while True:
 
     if event == '-UPDATE-':   # Plot the selected data
         update_chart()
-
-
