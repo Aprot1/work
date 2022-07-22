@@ -94,7 +94,7 @@ def plot_spectrum(COEFB0, COEFB1, COEFB2, COEFB4, pos_MQ_cut=None, pos_time_cut=
 
 
     # Generate the plot
-    fig, (ax1, ax2, ax3) = plt.subplots(3, constrained_layout=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=fSize, constrained_layout=True)
 
     cmap = ax1.pcolormesh(Y_axis, MQ, spectre_image)
     fig.colorbar(cmap, ax=ax1)
