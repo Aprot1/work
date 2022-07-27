@@ -149,10 +149,16 @@ def tab_spectrum(name):  # Create and return the new tab layout
         [sg.T('Cut at A/Q'), sg.Input('', key='-A/Q-CUT-')],
         [sg.T('Cut at time'), sg.Input('', key='-TIME-CUT-')]]
 
+    lay_save = [
+        [sg.Input(f'{name}', key=f'-SAVENAME-{name}-'),
+         sg.Button('Save plot', key=f'-SPLOT-{name}-'),
+         sg.Button('Close tab', key=f'-CLOSET-{name}-')]]
+
     lay = [
         [sg.Frame('Setting A/Q', layout=lay_settings),
          sg.Frame('Cut', layout=lay_cut),
-         sg.Button('UPDATE', key='-UPDATE-')],
+         sg.Button('UPDATE', key='-UPDATE-'),
+         sg.Frame('Save plot', layout=lay_save)],
         [sg.Graph(canvas_size=cSize, graph_bottom_left=(0, 0), graph_top_right=cSize, key=f'-GRAPH-{name}-')]
     ]
     return lay
