@@ -1,8 +1,10 @@
-import subprocess
+import obspy.clients.seedlink as sd
 import sys
+
 from PySide6.QtCore import QRegularExpression
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (QApplication,
+                               QComboBox,
                                QGroupBox,
                                QHBoxLayout,
                                QLabel,
@@ -35,14 +37,16 @@ def main():
             self.connectButton = QPushButton('Connect')
             self.connectButton.clicked.connect(self.try_connect)
             self.netLabel = QLabel('Network')
-            self.netField = QLineEdit()
+            self.netField = QComboBox()
             self.netField.setFixedWidth(70)
             self.netField.setValidator(self.netValid)
+            self.getButton = QPushButton('Get Stream')
+            self.getButton.clicked.connect(self.plot_trace)
             self.staLabel = QLabel('Station')
-            self.staField = QLineEdit()
+            self.staField = QComboBox()
             self.staField.setFixedWidth(70)
             self.strLabel = QLabel('Stream')
-            self.strField = QLineEdit()
+            self.strField = QComboBox()
             self.strField.setFixedWidth(70)
 
             # LAYOUT
@@ -56,6 +60,7 @@ def main():
             self.netLayout.addWidget(self.netLabel)
             self.netLayout.addWidget(self.netField)
             self.netLayout.addStretch(0)
+            self.netLayout.addWidget(self.getButton)
             self.staLayout = QVBoxLayout()
             self.staLayout.addWidget(self.staLabel)
             self.staLayout.addWidget(self.staField)
@@ -75,6 +80,7 @@ def main():
             ##############
             # STREAM BOX #
             ##############
+
             ####
 
             ################
@@ -92,9 +98,18 @@ def main():
         #############
 
         def try_connect(self):
-            cmd = 'dir'
-            process = subprocess.run(cmd, capture_output=True, shell=True)
-            print(process.stdout.decode())
+            self.client = sd.Client('192.168.1.2')
+            infos = self.client.get_info(station="C*", channel='*Z', level='channel')
+            print(infos)
+            for i in infos:
+                self.netField.addItem(i[0])
+                self.staField.addItem(i[1])
+
+        def plot_trace(self):
+            sta = str(self.staField.currentText())
+            net = str(self.netField.currentText())
+            # test = self.client.get_waveforms(station='CC247', channel='*Z', level='channel')
+            # print(str(test))
 
     app = QApplication(sys.argv)
 
