@@ -5,7 +5,7 @@ import sys
 import re
 
 from matplotlib.figure import Figure
-from PySide6.QtCore import QRegularExpression, QRunnable, Slot, QThreadPool
+from PySide6.QtCore import QRegularExpression, QRunnable, Slot, QThreadPool, Qt
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (QApplication,
                                QComboBox,
@@ -16,7 +16,8 @@ from PySide6.QtWidgets import (QApplication,
                                QMainWindow,
                                QPushButton,
                                QVBoxLayout,
-                               QWidget)
+                               QWidget,
+                               QCheckBox)
 
 
 class Worker(QRunnable):
@@ -40,22 +41,23 @@ class Worker(QRunnable):
         self.args = args
         self.kwargs = kwargs
 
+    '''
+    args[0] = seedlink client
+    args[1] = network
+    args[2] = station
+    args[3] = streams
+    '''
     @Slot()  # QtCore.Slot
     def run(self):
         '''
         Initialise the runner function with passed args, kwargs.
         '''
         print('in thread')
-        self.args[0].select_stream('XQ', 'CC247', '???')
+        self.args[0].select_stream(self.args[1], self.args[2], ' '.join(self.args[3]))
         self.args[0].run()
 
-    # def kill(self):
-    #     self.args[0].close()
-
-    # def get_stream(self, dataLineZ, dataLineN, dataLineE):
-    #     self.client.select_stream('XQ', 'CC247', '???')
-    #     self.client.run()
-
+    def kill(self):
+        self.exit()
 
 # MAIN FUNCTION #
 def main():
@@ -71,7 +73,10 @@ def main():
             self.netRe = re.compile('network=\"([A-Z]{2})\"')
             self.staRe = re.compile('station name=\"(\w+)\"')
             self.streamRe = re.compile('seedname=\"([A-Z]{3})\"')
-            self.started = False
+            self.checkList = []
+            self.graphs = []
+            self.dataLines = []
+            self.streaming = False
 
             self.setWindowTitle('SeedLink Stream')
 
@@ -93,9 +98,17 @@ def main():
             self.staLabel = QLabel('Station')
             self.staField = QComboBox()
             self.staField.setFixedWidth(70)
-            self.strLabel = QLabel('Stream')
-            self.strField = QComboBox()
-            self.strField.setFixedWidth(70)
+            self.strLabel = QLabel('Streams')
+            self.strLabel.setAlignment(Qt.AlignTop)
+            # self.strLabel.setVisible(True)
+            # self.str1 = QCheckBox()
+            # self.str1.setVisible(0)
+            # self.str2 = QCheckBox()
+            # self.str2.setVisible(0)
+            # self.str3 = QCheckBox()
+            # self.str3.setVisible(0)
+            # self.strField = QComboBox()
+            # self.strField.setFixedWidth(70)
 
             # LAYOUT
             self.parametersBox = QGroupBox('Parameters')
@@ -115,8 +128,7 @@ def main():
             self.staLayout.addStretch(0)
             self.strLayout = QVBoxLayout()
             self.strLayout.addWidget(self.strLabel)
-            self.strLayout.addWidget(self.strField)
-            self.strLayout.addStretch(0)
+            # self.strLayout.addStretch(0)
             self.parametersLayout = QHBoxLayout()
             self.parametersLayout.addLayout(self.ipLayout)
             self.parametersLayout.addLayout(self.netLayout)
@@ -129,29 +141,28 @@ def main():
             ##############
             # STREAM BOX #
             ##############
-            self.graphWidgetZ = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
-            self.graphWidgetZ.setBackground('w')
-            self.graphWidgetZ.showGrid(x=True, y=True)
-            self.dataLineZ = self.graphWidgetZ.plot()
-
-
-            self.graphWidgetN = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
-            self.graphWidgetN.setBackground('w')
-            self.graphWidgetN.showGrid(x=True, y=True)
-            self.dataLineN = self.graphWidgetN.plot()
-
-
-            self.graphWidgetE = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
-            self.graphWidgetE.setBackground('w')
-            self.graphWidgetE.showGrid(x=True, y=True)
-            self.dataLineE = self.graphWidgetE.plot()
-
             self.streamBox = QGroupBox('Streams')
             self.streamLayout = QVBoxLayout()
-            self.streamLayout.addWidget(self.graphWidgetZ)
-            self.streamLayout.addWidget(self.graphWidgetN)
-            self.streamLayout.addWidget(self.graphWidgetE)
             self.streamBox.setLayout(self.streamLayout)
+
+
+            # self.graphWidget2 = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
+            # self.graphWidget2.setBackground('w')
+            # self.graphWidget2.showGrid(x=True, y=True)
+            # self.dataLine2 = self.graphWidget2.plot()
+            #
+            #
+            # self.graphWidget3 = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
+            # self.graphWidget3.setBackground('w')
+            # self.graphWidget3.showGrid(x=True, y=True)
+            # self.dataLine3 = self.graphWidget3.plot()
+
+            # self.streamBox = QGroupBox('Streams')
+            # self.streamLayout = QVBoxLayout()
+            # self.streamLayout.addWidget(self.graphWidget1)
+            # self.streamLayout.addWidget(self.graphWidget2)
+            # self.streamLayout.addWidget(self.graphWidget3)
+            # self.streamBox.setLayout(self.streamLayout)
             # self.streamBox.setVisible(0)
             #####
 
@@ -170,19 +181,11 @@ def main():
         # FUNCTIONS #
         #############
         def handle_data(self, trace):
-            if 'HHZ' in trace.id:
-                self.dataLineZ.setData(trace.data)
-                self.graphWidgetZ.update()
-
-            if 'HHN' in trace.id:
-                self.dataLineN.setData(trace.data)
-                self.graphWidgetN.update()
-
-            if 'HHE' in trace.id:
-                self.dataLineE.setData(trace.data)
-                self.graphWidgetE.update()
-
-            self.streamLayout.update()
+            for i, j in enumerate(self.toStream):
+                if j in trace.id:
+                    self.dataLines[i].setData(trace.data)
+                    self.graphs[i].update()
+            # self.streamLayout.update()
 
         def try_connect(self):
             self.client = sd.create_client('100.96.1.2', on_data=self.handle_data)
@@ -194,17 +197,32 @@ def main():
             self.netField.addItem(network)
             for i in stations:
                 self.staField.addItem(i)
-            for i in streams:
-                self.strField.addItem(i)
+            for i in range(len(streams)):
+                self.checkList.append(QCheckBox(streams[i]))
+                self.strLayout.addWidget(self.checkList[i])
 
         def plot_trace(self):
-            try:
-                if self.worker:
-                    self.client.close()
-            except:
+            if self.streaming:
+                # self.threadpool.thread()
+                # self.client.close()
+                self.streaming = False
+            else:
+                self.toStream = []
+                n = 0
+                for i in self.checkList:
+                    if i.isChecked():
+                        self.toStream.append(i.text())
+                        self.graphs.append(pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()}))
+                        self.graphs[n].setBackground('w')
+                        self.graphs[n].showGrid(x=True, y=True)
+                        self.dataLines.append(self.graphs[n].plot())
+                        self.streamLayout.addWidget(self.graphs[n])
+                        n += 1
+                print(self.toStream)
                 self.threadpool = QThreadPool()
-                self.worker = Worker(self.client)
+                self.worker = Worker(self.client, self.netField.currentText(), self.staField.currentText(), self.toStream)
                 self.threadpool.start(self.worker)
+                self.streaming = True
 
     app = QApplication(sys.argv)
 
