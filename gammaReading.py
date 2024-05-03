@@ -259,21 +259,21 @@ class MainWindow(QMainWindow):
             self.prodLine.setData(self.xp, self.yp)
 
             ##### File Handling #####
-            now = time.gmtime(now)
-            tod = time.strftime('%Y%m%d', now)
-            now = time.strftime('%Y%m%d;%H%M%S', now)
-            path = str(Path.cwd()) + '/data/'
-            file = path + 'gamma' + tod + '.csv'
-            toWrite = ';'.join([now, str(gam)]) + '\n'
-            if not os.path.isdir(path):
-                os.mkdir(path)
-            if not os.path.isfile(file):
-                f = open(file, 'w')
-                f.write('Date;Time;Gamma\n')
-                f.close()
-            f = open(file, 'a')
-            f.write(toWrite)
-            f.close()
+ #           now = time.gmtime(now)
+ #           tod = time.strftime('%Y%m%d', now)
+ #           now = time.strftime('%Y%m%d;%H%M%S', now)
+ #           path = str(Path.cwd()) + '/data/'
+ #           file = path + 'gamma' + tod + '.csv'
+ #           toWrite = ';'.join([now, str(gam)]) + '\n'
+ #           if not os.path.isdir(path):
+ #               os.mkdir(path)
+ #           if not os.path.isfile(file):
+ #               f = open(file, 'w')
+ #               f.write('Date;Time;Gamma\n')
+ #               f.close()
+ #           f = open(file, 'a')
+ #           f.write(toWrite)
+ #           f.close()
             ######
 
     def change_delta(self):
