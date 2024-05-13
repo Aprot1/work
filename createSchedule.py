@@ -28,22 +28,28 @@ TEMPFILE = 'sched.txt'
 
 
 def make_date_string(date):
+    if date.day() < 10:
+        day = '0' + str(date.day())
+    else:
+        day = str(date.day())
     if date.month() < 10:
         month = '0' + str(date.month())
     else:
         month = str(date.month())
-    datestring = '-'.join([str(date.year()), month, str(date.day())])
-    return datestring
+    ans = '-'.join([str(date.year()), month, day])
+    return ans
 
 
 def check_day(dayToCheck, nn, ns):
-    activeSessionNn = []
-    activeSessionNs = []
+    ansNn = pd.DataFrame(columns=['Date', 'Time (UTC)', 'Session'])
+    ansNs = pd.DataFrame(columns=['Date', 'Time (UTC)', 'Session'])
     with open(TEMPFILE, 'r') as f:
         for num, line in enumerate(f):
             if dayToCheck in line:
+                # print(f'day to check = {dayToCheck}, line = {line},')
                 try:
                     session = linecache.getline(TEMPFILE, num)
+                    # print(session)
                     session = re.findall(SESSIONREGEX, session)[0]
                     time = linecache.getline(TEMPFILE, num + 1)
                     time = re.findall(TIMEREGEX, time)[0]
@@ -56,17 +62,19 @@ def check_day(dayToCheck, nn, ns):
                             line = linecache.getline(TEMPFILE, num)
                             station = re.findall(STATIONREGEX, line)
                             if nn and 'Nn' in station:
-                                activeSessionNn.append(dayToCheck)
-                                activeSessionNn.append(time)
-                            if ns and 'Ns' in station:
-                                activeSessionNs.append(dayToCheck)
-                                activeSessionNs.append(time)
+                                tempNn = pd.DataFrame([[dayToCheck, time, session]],
+                                                      columns=['Date', 'Time (UTC)', 'Session'])
+                                ansNn = pd.concat([ansNn, tempNn], ignore_index=True)
+                            if ns and ('Ns' in station):
+                                tempNs = pd.DataFrame([[dayToCheck, time, session]],
+                                                      columns=['Date', 'Time (UTC)', 'Session'])
+                                ansNs = pd.concat([ansNs, tempNs], ignore_index=True)
                         num += 1
                         line = linecache.getline(TEMPFILE, num)
-                    return session, activeSessionNn, activeSessionNs
                 except:
                     pass
-        return None, None, None
+        return ansNn, ansNs
+
 
 def main():
     # Main Window creation
@@ -150,34 +158,31 @@ def main():
 
             with open(TEMPFILE, 'w') as f:
                 f.write(r.text)
-                # print(r.text)
+                print(r.text)
+
             nnSessionDf = pd.DataFrame(columns=['Date', 'Time (UTC)', 'Session'])
             nsSessionDf = pd.DataFrame(columns=['Date', 'Time (UTC)', 'Session'])
 
             while start != end.addDays(1):
-                session, nn, ns = check_day(startString, self.nnButton.isChecked(), self.nsButton.isChecked())
-                if session is not None:
-                    if nn:
-                        tempNn = pd.DataFrame({'Date': [nn[0]],
-                                               'Time (UTC)': [nn[1]],
-                                               'Session': session
-                                               })
-                        nnSessionDf = pd.concat([nnSessionDf, tempNn])
-                    if ns:
-                        tempNs = pd.DataFrame({'Date': [ns[0]],
-                                               'Time (UTC)': [ns[1]],
-                                               'Session': session
-                                               })
-                        nsSessionDf = pd.concat([nsSessionDf, tempNs])
+                nn, ns = check_day(startString, self.nnButton.isChecked(), self.nsButton.isChecked())
+                if not nn.empty:
+                    nnSessionDf = pd.concat([nnSessionDf, nn])
+                if not ns.empty:
+                    nsSessionDf = pd.concat([nsSessionDf, ns])
                 start = start.addDays(1)
                 startString = make_date_string(start)
-            print(nnSessionDf)
-            print(nsSessionDf)
-                #outputText = []
-                #for i in nnSessionDf.iterrows():
-                #    outputText += str(i)
-                #self.output.setText(str(outputText))
-                #self.sessionBox.setVisible(True)
+
+            outputText = str()
+            if not nnSessionDf.empty:
+                outputText += 'Sessions for Nn : \n\n'
+                nnSessionDf = nnSessionDf.reset_index()
+                for i in nnSessionDf.index:
+                    date = nnSessionDf.iloc[i, nnSessionDf.columns.get_loc('Date')]
+                    outputText += date
+                    outputText += '\n'
+
+            self.output.setText(outputText)
+            self.sessionBox.setVisible(True)
 
     app = QApplication(sys.argv)
 
