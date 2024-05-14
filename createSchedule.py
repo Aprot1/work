@@ -178,11 +178,23 @@ def main():
                 nnSessionDf = nnSessionDf.reset_index()
                 for i in nnSessionDf.index:
                     date = nnSessionDf.iloc[i, nnSessionDf.columns.get_loc('Date')]
-                    outputText += date
+                    time = nnSessionDf.iloc[i, nnSessionDf.columns.get_loc('Time (UTC)')]
+                    session = nnSessionDf.iloc[i, nnSessionDf.columns.get_loc('Session')]
+                    outputText += ' '.join((date, time, session))
                     outputText += '\n'
-
-            self.output.setText(outputText)
-            self.sessionBox.setVisible(True)
+                outputText += '\n'
+            if not nsSessionDf.empty:
+                outputText += 'Sessions for Ns : \n\n'
+                nsSessionDf = nsSessionDf.reset_index()
+                for i in nsSessionDf.index:
+                    date = nsSessionDf.iloc[i, nsSessionDf.columns.get_loc('Date')]
+                    time = nsSessionDf.iloc[i, nsSessionDf.columns.get_loc('Time (UTC)')]
+                    session = nsSessionDf.iloc[i, nsSessionDf.columns.get_loc('Session')]
+                    outputText += ' '.join((date, time, session))
+                    outputText += '\n'
+            if len(outputText) > 0:
+                self.output.setText(outputText)
+                self.sessionBox.setVisible(True)
 
     app = QApplication(sys.argv)
 
